@@ -9,73 +9,77 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args){
+//        ArrayList<Integer[]> cromosoma = new ArrayList<>();
+//        cromosoma.add(new Integer[]{1,2,4,3});
+//        cromosoma.add(new Integer[]{4,1,3,2});
+//        cromosoma.add(new Integer[]{4,3,1,2});
 
-//        JSS uno = new JSS(1); uno.addRutas(new int[][] {{1,1},{2,1}});
-//        JSS dos = new JSS(2); dos.addRutas(new int[][] {{1,1},{2,1}});
-//        JSS tres = new JSS(3); tres.addRutas(new int[][] {{2,2},{1,2}});
+//        cromosoma.add(new Integer[]{1,2,3});
+//        cromosoma.add(new Integer[]{3,2,1});
+//        int len = sBuilder(cromosoma,jss,true);
+
+        //CREAMOS LA INSTANCIA JSS Y AÑADIMOS LAS RUTAS DE LOS JOBS
         JSS uno = new JSS(1); uno.addRutas(new int[][] {{1,1},{2,1},{3,3}});
         JSS dos = new JSS(2); dos.addRutas(new int[][] {{1,3},{2,2},{3,1}});
         JSS tres = new JSS(3); tres.addRutas(new int[][] {{3,2},{2,1},{1,3}});
         JSS cuatro = new JSS(4); cuatro.addRutas(new int[][] {{3,1},{2,4},{1,2}});
         ArrayList<JSS> jss = new ArrayList<>(Arrays.asList(uno,dos,tres,cuatro));
 
-        ArrayList<Integer[]> cromosoma = new ArrayList<>();
-        cromosoma.add(new Integer[]{1,2,4,3});
-        cromosoma.add(new Integer[]{4,1,3,2});
-        cromosoma.add(new Integer[]{4,3,1,2});
-
-//        cromosoma.add(new Integer[]{1,2,3});
-//        cromosoma.add(new Integer[]{3,2,1});
-
-        int len = sBuilder(cromosoma,jss,true);
-        System.out.println(len);
-        ////////
-
-
         //MODELADO DEL PROBLEMA
-        int s = 3; //Nº DE SIMBOLOS DEL ALFABETO
-        int r = 5; //LONG DE LA CADENA
+        int s = jss.size(); //Nº DE SIMBOLOS DEL ALFABETO = Nº DE JOBS
+        int m = 3; //NUMERO DE VECTORES EN EL CROMOSOMA = Nº DE MAQUINAS
+        int rm = jss.size(); //NUMERO DE GENES EN CADA VECTOR = Nº DE JOBS
+        int r = rm*m; //LONG TOTAL DE LA CADENA
 
         //PARAMETROS DEL ALGORITMO
-        int n = 50; //TAMAÑO DE LA POBLACION
+        int n = 5; //TAMAÑO DE LA POBLACION
         double pc = 0.8; //PROBABILIDAD DE CRUCE
         double pm = 1.0 / (r*n); //PROBABILIDAD DE MUTACION
-        int t_max = 25;
+        int t_max = 1;
         int num = 1000; //Nº ORIGINAL DE CASILLAS DE LA RULETA
         double pextraccion = 0.05; //PORCENTAJE DE LAS MUESTRAS QUE EXTRAEMOS AL INICIO DEL BUCLE Y LUEGO IMPORTAMOS
         boolean convergencia=false;
 
         //INICIO DEL ALGORITMO
-//        int t=0;
-//        int[] w = new int[n];   //INICIALIZAMOS LAS CADENAS
-//        for(int i=0; i<n; i++){
-//            int[] wj = new int[r]; String wjS="";
-//            for(int j=0; j<r; j++){
-//                wj[j] = (int) Math.floor(Math.random()*s);
-//                wjS+=wj[j];
-//            }
-//            w[i] = Integer.parseInt(wjS);
-//        }
-//
-//        int[] apt = new int[n];
-//        for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
-//
-//        int[] apt_gen = new int[t_max+1];
-//        apt_gen[0]=0;
-//        for(int i=0; i<n; i++){apt_gen[0]+=apt[i];}
-//
-//        double[] apt_m_gen = new double[t_max+1];
-//        apt_m_gen[0] = apt_gen[0]/n;
-//
-//        //IMPRESION INICIAL:
-//        System.out.println("Población antes del algoritmo: ");
-//        for(int j=0; j<n; j++){
-//            System.out.println(w[j]);
-//        }
-//        System.out.println("----------------------------------");
-//
-//        //CUERPO DEL ALGORITMO
-//        while(t<t_max && !convergencia){
+        int t=0;
+        ArrayList<Integer[]>[] w = new ArrayList[n];   //INICIALIZAMOS LAS CADENAS
+                                                        //CONDICION: NO SE PUEDEN REPETIR JOBS EN EL MISMO VECTOR DE LA MISMA CADENA
+
+        for(int i=0; i<n; i++){
+            ArrayList<Integer[]> cromosoma = new ArrayList<>();
+            for(int j=0; j<m; j++){
+                cromosoma.add(generarVector(s));
+            }
+            w[i] = cromosoma;
+        }
+
+        int[] apt = new int[n];
+        for(int j=0; j<n; j++){apt[j] = sBuilder(w[j],jss,false);}
+
+        int[] apt_gen = new int[t_max+1];
+        apt_gen[0]=0;
+        for(int i=0; i<n; i++){apt_gen[0]+=apt[i];}
+
+        double[] apt_m_gen = new double[t_max+1];
+        apt_m_gen[0] = apt_gen[0]/(double) n;
+
+        //IMPRESION INICIAL:
+        System.out.println("Población antes del algoritmo: ");
+        for(int j=0; j<n; j++){
+            for(int i=0; i<m; i++){
+                System.out.print("{");
+                for(int x=0; x<s; x++){
+                    System.out.print(w[j].get(i)[x]+" ");
+                }
+                System.out.print("}");
+            }
+            System.out.print("  Tiempo de completación: "+apt[j]);
+            System.out.println();
+        }
+        System.out.println("----------------------------------");
+
+        //CUERPO DEL ALGORITMO
+        while(t<t_max && !convergencia){
 //            //GUARDAMOS LA POBLACION INICIAL PARA COMPARARLA CON LA FINAL
 //            int[] w_inicial = new int[n];
 //            for(int i=0; i<n; i++){w_inicial[i]=w[i];}
@@ -155,35 +159,73 @@ public class Main {
 //            convergencia = compararDiferencia(w_inicial,w);
 //            System.out.println(convergencia);
 //
-//            t++;
-//            for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
-//            apt_gen[t]=0;
-//            for(int i=0; i<n; i++){apt_gen[t]+=apt[i];}
-//            apt_m_gen[t] = apt_gen[t]/n;
-//        }
-//
-//        //IMPRESION FINAL
-//        System.out.println("Población después del algoritmo: ");
-//        for(int j=0; j<n; j++){
-//            System.out.println(w[j]);
-//        }
-//        System.out.println("----------------------------------");
-//
-//        //SOLUCION (MEJOR INDIVIDUO)
-//        int mejorPos = max(apt);
-//        int mejor_a = apt[mejorPos];
-//        int mejor_w = w[mejorPos];
-//        System.out.println("Mejor aptitud: "+mejor_a + " - Mejor cadena: " + mejor_w);
+            t++;
+            for(int i=0; i<n; i++){apt[i] = sBuilder(w[i],jss,false);}
+            apt_gen[t]=0;
+            for(int i=0; i<n; i++){apt_gen[t]+=apt[i];}
+            apt_m_gen[t] = apt_gen[t]/n;
+        }
+
+        //IMPRESION FINAL
+        System.out.println("Población después del algoritmo: ");
+        for(int j=0; j<n; j++){
+            for(int i=0; i<m; i++){
+                System.out.print("{");
+                for(int x=0; x<s; x++){
+                    System.out.print(w[j].get(i)[x]+" ");
+                }
+                System.out.print("}");
+            }
+            System.out.print("  Tiempo de completación: "+apt[j]);
+            System.out.println();
+        }
+        System.out.println("----------------------------------");
+
+        //SOLUCION (MEJOR INDIVIDUO)
+        int mejorPos = min(apt);
+        int mejor_a = apt[mejorPos];
+        ArrayList<Integer[]> mejor_w = w[mejorPos];
+        System.out.print("Mejor aptitud: "+mejor_a + " - Mejor cadena: ");
+        for(int i=0; i<m; i++){
+            System.out.print("{");
+            for(int x=0; x<s; x++){
+                System.out.print(mejor_w.get(i)[x]+" ");
+            }
+            System.out.print("} ");
+        }
+        System.out.println();
+        System.out.println("Representacion: "); sBuilder(mejor_w,jss,true);
     }
 
-    private static boolean compararDiferencia(int[] wOld, int[] wNew){
+    private static Integer[] generarVector(int s){
+        Integer[] vector = new Integer[s];
+
+        for(int i=0; i<s; i++){
+            int alt = (int) Math.floor(Math.random()*s) + 1;
+            boolean presente = true;
+            while (presente) {
+                presente = false;
+                for(int j=0; j<i; j++){
+                    if(alt==vector[j]){
+                        presente=true;
+                        alt = (int) Math.floor(Math.random()*s) + 1;
+                    }
+                }
+            }
+            vector[i] = alt;
+        }
+
+        return vector;
+    }
+
+    private static boolean compararDiferencia(ArrayList<Integer[]>[] wOld, ArrayList<Integer[]>[] wNew){
         double porcentajeIgualdad = 0.97; //SI HAY UN 97% DE IGUALDAD ENTRE UNO Y OTRO, CONSIDERAMOS QUE HAY CONVERGENCIA
         int poblacion = wNew.length;
         int igualdad = 0;
 
         for(int i=0; i<poblacion; i++){
             for(int j=0; j<poblacion; j++){
-                if(wNew[j]==wOld[i]){
+                if(wNew[j].equals(wOld[i])){
                     igualdad++;
                     break;
                 }
@@ -292,22 +334,22 @@ public class Main {
     }
 
     private static int[] order(int[] x){
-        int[] maxList = new int[x.length];
+        int[] minList = new int[x.length];
 
         for(int i=0; i<x.length; i++){
-            int maxPos = max(x);
-            maxList[i] = maxPos;
-            x[maxPos] = -1;
+            int minPos = min(x);
+            minList[i] = minPos;
+            x[minPos] = 9999999;
         }
 
-        return maxList;
+        return minList;
     }
 
-    private static int max(int[] x){
-        int max = -1; int pos = -1;
+    private static int min(int[] x){
+        int min = 99999999; int pos = -1;
         for(int i=0; i<x.length; i++){
-            if(max<x[i]){
-                max = x[i];
+            if(min>x[i]){
+                min = x[i];
                 pos=i;
             }
         }
@@ -319,27 +361,23 @@ public class Main {
 
         int nummaquinas = cromosoma.size();
         int tiempo = 0;
-        int[] jobEnMaquina = new int[nummaquinas];
-        boolean[] maquinaFinish = new boolean[nummaquinas];
         ArrayList<ArrayList<Integer>> maquinas = new ArrayList<>();
 
         for(int i=0; i<nummaquinas; i++){
             maquinas.add(new ArrayList<>());
-            jobEnMaquina[i] = cromosoma.get(i)[0];
-            maquinaFinish[i] = false;
         }
 
         //RECORREMOS EL BUCLE HASTA EL FIN DE TODOS LOS JOBS
         while(!checkFinish(instancia)){
             //RECORREMOS MAQUINA A MAQUINA Y SUS JOBS DE PREFERENCIA, SI SE PUEDE SE AÑADEN, SINO SE ESPERA
             for(int i=0; i<nummaquinas; i++){
-                if(!maquinaFinish[i] && maquinas.get(i).size()==tiempo){
-                    int next = checkJobForMachine(instancia,i,jobEnMaquina[i]);
-                    if(next>0){
-                        JSS job = getJob(instancia,jobEnMaquina[i]);
+                if(maquinas.get(i).size()==tiempo){
+                    int[] next = checkJobForMachine(instancia,i,cromosoma.get(i));
+                    if(next[0]!=-1){
+                        JSS job = getJob(instancia,next[0]);
                         job.setOcupado(true);
-                        for(int j=0; j<next; j++) {
-                            maquinas.get(i).add(jobEnMaquina[i]);
+                        for(int j=0; j<next[1]; j++) {
+                            maquinas.get(i).add(next[0]);
                         }
                     }else{
                         maquinas.get(i).add(-1);
@@ -357,16 +395,6 @@ public class Main {
                     JSS job = getJob(instancia,maquinas.get(i).get(tiempo-1));
                     job.setOcupado(false);
                     job.nextMachine();
-                    for(int x=0; x<cromosoma.get(i).length; x++){
-                        if(jobEnMaquina[i]==cromosoma.get(i)[x]){
-                            if(x==(cromosoma.get(i).length-1)){
-                                maquinaFinish[i]=true;
-                            }else{
-                                jobEnMaquina[i]=cromosoma.get(i)[x+1];
-                            }
-                            break;
-                        }
-                    }
                 }
             }
         }
@@ -380,10 +408,12 @@ public class Main {
             for (int i = 0; i < nummaquinas; i++) {
                 System.out.print("Maquina " + (i + 1));
                 for (int j = 0; j < maquinas.get(i).size(); j++) {
+                    int length = String.valueOf(j).length();
+                    for(int x=0; x<length; x++) System.out.print(" ");
                     if (maquinas.get(i).get(j) == -1) {
-                        System.out.print(" |  ");
+                        System.out.print("|  ");
                     } else {
-                        System.out.print(" | " + maquinas.get(i).get(j));
+                        System.out.print("| " + maquinas.get(i).get(j));
                     }
                 }
                 System.out.println();
@@ -393,14 +423,17 @@ public class Main {
         return tiempo;
     }
 
-    public static int checkJobForMachine(ArrayList<JSS> jss, int m, int jobnum){
+    public static int[] checkJobForMachine(ArrayList<JSS> jss, int m, Integer[] jobpreferences){
         m++;
-        JSS job = getJob(jss,jobnum);
-        if(job.ocupado==true || job.maquinaSolicitada!=m){
-            return -1;
+
+        for(int i=0; i<jobpreferences.length; i++) {
+            JSS job = getJob(jss,jobpreferences[i]);
+            if(!job.finish && job.ocupado==false && job.maquinaSolicitada==m){
+                return new int[]{job.getJob(),job.getNextRutaLen()};
+            }
         }
 
-        return job.getNextRutaLen();
+        return new int[]{-1};
     }
 
     public static JSS getJob(ArrayList<JSS> jss, int job){
