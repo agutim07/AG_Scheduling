@@ -35,10 +35,10 @@ public class Main {
         int n = 5; //TAMAÑO DE LA POBLACION
         double pc = 0.8; //PROBABILIDAD DE CRUCE
         double pm = 1.0 / (r*n); //PROBABILIDAD DE MUTACION
-        int t_max = 1;
+        int t_max = 10;
         int num = 1000; //Nº ORIGINAL DE CASILLAS DE LA RULETA
-        double pextraccion = 0.05; //PORCENTAJE DE LAS MUESTRAS QUE EXTRAEMOS AL INICIO DEL BUCLE Y LUEGO IMPORTAMOS
-        boolean convergencia=false;
+        double pextraccion = 0.1; //PORCENTAJE DE LAS MUESTRAS QUE EXTRAEMOS AL INICIO DEL BUCLE Y LUEGO IMPORTAMOS
+        boolean elitismo = true;
 
         //INICIO DEL ALGORITMO
         int t=0;
@@ -64,7 +64,7 @@ public class Main {
         apt_m_gen[0] = apt_gen[0]/(double) n;
 
         //IMPRESION INICIAL:
-        System.out.println("Población antes del algoritmo: ");
+        System.out.println("Población antes del algoritmo: [Media aptitud: "+apt_m_gen[0]+"]");
         for(int j=0; j<n; j++){
             for(int i=0; i<m; i++){
                 System.out.print("{");
@@ -79,95 +79,83 @@ public class Main {
         System.out.println("----------------------------------");
 
         //CUERPO DEL ALGORITMO
-        while(t<t_max && !convergencia){
-//            //GUARDAMOS LA POBLACION INICIAL PARA COMPARARLA CON LA FINAL
-//            int[] w_inicial = new int[n];
-//            for(int i=0; i<n; i++){w_inicial[i]=w[i];}
-//
-//            //EXTRAEMOS EL %x CON MAYOR APTITUD
-//            int extraccion = (int) Math.floor(pextraccion*n);
-//            int[] cadenaExtraida = extraerMayorAptitud(w,extraccion,n);
-//
-//            //SELECCION
-//            int[] p = new int[n];
-//            p[0] = apt[0] / apt_gen[t];
-//            int[] c = new int[n];
-//            c[0] = (int) Math.floor(p[0]*num) + 1;
-//            int[] alfa = new int[n];
-//            alfa[0] = 0;
-//            int[] beta = new int[n];
-//            beta[0] = alfa[0]+c[0]-1;
-//
-//            for(int i=1; i<n; i++){
-//                p[i] = apt[i] / apt_gen[t];
-//                c[i] = (int) Math.floor(p[i]*num) + 1;
-//                alfa[i] = alfa[i-1] + c[i-1];
-//                beta[i] = alfa[i] + c[i] -1;
-//            }
-//
-//            int num_real_casillas = beta[n-1] + 1;
-//
-//            //SELECCION DE INDIVIDUOS
-//            int[] w_new = new int[n];
-//            for(int j=0; j<n; j++){
-//                int cas = (int) Math.floor(Math.random()*num_real_casillas);
-//                int i=-1;
-//                for(int x=0; x<n; x++){
-//                    if(cas>=alfa[x] && cas<=beta[x]){i=x;}
-//                }
-//                w_new[j] = w[i];
-//            }
-//            for(int i=0; i<n; i++){
-//                w[i] = w_new[i];
-//            }
-//            //FIN SELECCION
-//
-//            //CROSSOVER
-//            int[][] parejas = getCrossoverParejas(n,pc);
-//            //intercambiamos el material genetico de las parejas
-//            for(int i=0; i<(parejas[0].length); i++){
-//                int posA = parejas[0][i]; int posB = parejas[1][i];
-//                int genes = (int) Math.floor(Math.random()*(r-1)) + 1; //nº aleatorio entre 1 y r-1
-//                int[] nuevosValores = recombinar(w[posA],w[posB],genes,r);
-//                w[posA] = nuevosValores[0];
-//                w[posB] = nuevosValores[1];
-//            }
-//            //FIN CROSSOVER
-//
-//            //MUTACION
-//            for(int i=0; i<n; i++){
-//                String cadena = String.valueOf(w[i]);
-//                while(cadena.length()!=r) cadena = '0'+cadena;
-//                for(int j=0; j<r; j++){
-//                    double randomnum = Math.random();
-//                    if(randomnum<pm){
-//                        int randomdigit = (int) Math.floor(Math.random()*s);
-//                        while(randomdigit==Character.getNumericValue(cadena.charAt(j))){
-//                            randomdigit = (int) Math.floor(Math.random()*s);
-//                        }
-//                        cadena = cadena.substring(0,j)+randomdigit+cadena.substring(j+1);
-//                    }
-//                }
-//                w[i] = Integer.valueOf(cadena);
-//            }
-//            //FIN MUTACION
-//
-//            //EXTRAEMOS UN %x ALEATORIO Y AÑADIMOS EL %x CON MAYOR APTITUD EXTRAIDO ANTES
-//            w = extraerImportar(w,cadenaExtraida,n);
-//
-//            //COMPROBAMOS SI EL ALGORITMO SE HA ESTANCADO (LA POBLACION HA CONVERGIDO)
-//            convergencia = compararDiferencia(w_inicial,w);
-//            System.out.println(convergencia);
-//
+        while(t<t_max){
+            //EXTRAEMOS EL %x CON MAYOR APTITUD
+            int extraccion = (int) Math.floor(pextraccion*n);
+            ArrayList<Integer[]>[] cadenaExtraida = extraerMayorAptitud(w,extraccion,n,jss);
+
+            //SELECCION
+            double[] p = getPorcentajes(apt);
+            int[] c = new int[n];
+            c[0] = (int) Math.floor(p[0]*num) + 1;
+            int[] alfa = new int[n];
+            alfa[0] = 0;
+            int[] beta = new int[n];
+            beta[0] = alfa[0]+c[0]-1;
+
+            for(int i=1; i<n; i++){
+                c[i] = (int) Math.floor(p[i]*num) + 1;
+                alfa[i] = alfa[i-1] + c[i-1];
+                beta[i] = alfa[i] + c[i] -1;
+            }
+
+            int num_real_casillas = beta[n-1] + 1;
+
+            //SELECCION DE INDIVIDUOS
+            ArrayList<Integer[]>[] w_new = new ArrayList[n];
+            for(int j=0; j<n; j++){
+                int cas = (int) Math.floor(Math.random()*num_real_casillas);
+                int i=-1;
+                for(int x=0; x<n; x++){
+                    if(cas>=alfa[x] && cas<=beta[x]){i=x;}
+                }
+                w_new[j] = new ArrayList<>(w[i]);
+            }
+            for(int i=0; i<n; i++){
+                w[i] = new ArrayList<>(w_new[i]);
+            }
+            //FIN SELECCION
+
+            //CROSSOVER
+            int[][] parejas = getCrossoverParejas(n,pc);
+            //intercambiamos el material genetico de las parejas
+            for(int i=0; i<(parejas[0].length); i++){
+                int posA = parejas[0][i]; int posB = parejas[1][i];
+                int borde1 = (int) Math.floor(Math.random()*(s-1)) + 1; //nº aleatorio entre 1 y s-1
+                int borde2 = (int) Math.floor(Math.random()*(s-1)) + 1; //nº aleatorio entre 1 y s-1
+                while (borde1==borde2){borde2 = (int) Math.floor(Math.random()*(s-1)) + 1;}
+                ArrayList<Integer[]>[] nuevosValores = recombinar(w[posA],w[posB],borde1,borde2);
+
+                w[posA] = new ArrayList<>(nuevosValores[0]);
+                w[posB] = new ArrayList<>(nuevosValores[1]);
+            }
+            //FIN CROSSOVER
+
+            //MUTACION
+            for(int i=0; i<n; i++){
+                for(int j=0; j<m; j++){
+                    for(int x=0; x<rm; x++){
+                        double randomnum = Math.random();
+                        if(randomnum<pm){
+                            w[i].set(j, vectorMutado(i,j,x,w));
+                        }
+                    }
+                }
+            }
+            //FIN MUTACION
+
+            //EXTRAEMOS UN %x ALEATORIO Y AÑADIMOS EL %x CON MAYOR APTITUD EXTRAIDO ANTES
+            if(elitismo) w = extraerImportar(w,cadenaExtraida,n);
+
             t++;
             for(int i=0; i<n; i++){apt[i] = sBuilder(w[i],jss,false);}
             apt_gen[t]=0;
             for(int i=0; i<n; i++){apt_gen[t]+=apt[i];}
-            apt_m_gen[t] = apt_gen[t]/n;
+            apt_m_gen[t] = apt_gen[t]/(double) n;
         }
 
         //IMPRESION FINAL
-        System.out.println("Población después del algoritmo: ");
+        System.out.println("Población después del algoritmo: [Media aptitud: "+apt_m_gen[t]+"]");
         for(int j=0; j<n; j++){
             for(int i=0; i<m; i++){
                 System.out.print("{");
@@ -197,6 +185,40 @@ public class Main {
         System.out.println("Representacion: "); sBuilder(mejor_w,jss,true);
     }
 
+    private static double[] getPorcentajes(int[] apt){
+        double[] p = new double[apt.length];
+        int aptmin = apt[min(apt)] - 1;
+        int aptmax = apt[max(apt)] - aptmin;
+
+        int[] newapt = new int[apt.length];
+        int sumapt = 0;
+        for(int i=0; i<apt.length; i++){
+            int valor = apt[i] - aptmin;
+            newapt[i] = (aptmax-valor) + 1;
+            sumapt+=newapt[i];
+        }
+
+        for(int i=0; i<apt.length; i++){
+            p[i] = newapt[i]/(double) sumapt;
+        }
+
+        return p;
+
+    }
+
+    private static Integer[] vectorMutado(int i, int j, int x, ArrayList<Integer[]>[] w){
+        Integer[] vector = w[i].get(j);
+        int job = vector[x];
+        int randompos = (int) Math.floor(Math.random()*vector.length);
+        while(randompos==x){
+            randompos = (int) Math.floor(Math.random()*vector.length);
+        }
+        vector[x] = vector[randompos];
+        vector[randompos] = job;
+
+        return vector;
+    }
+
     private static Integer[] generarVector(int s){
         Integer[] vector = new Integer[s];
 
@@ -218,65 +240,98 @@ public class Main {
         return vector;
     }
 
-    private static boolean compararDiferencia(ArrayList<Integer[]>[] wOld, ArrayList<Integer[]>[] wNew){
-        double porcentajeIgualdad = 0.97; //SI HAY UN 97% DE IGUALDAD ENTRE UNO Y OTRO, CONSIDERAMOS QUE HAY CONVERGENCIA
-        int poblacion = wNew.length;
-        int igualdad = 0;
-
-        for(int i=0; i<poblacion; i++){
-            for(int j=0; j<poblacion; j++){
-                if(wNew[j].equals(wOld[i])){
-                    igualdad++;
-                    break;
-                }
-            }
-        }
-
-        double porcentaje = ((double) igualdad)/poblacion;
-
-        if(porcentaje>=porcentajeIgualdad) return true;
-
-        return false;
-    }
-
-    private static int[] extraerMayorAptitud(int w[], int num, int n){
+    private static ArrayList<Integer[]>[] extraerMayorAptitud(ArrayList<Integer[]>[] w, int num, int n, ArrayList<JSS> jss){
         int[] apt = new int[n];
-        for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
+        for(int i=0; i<n; i++){apt[i] = sBuilder(w[i],jss,false);}
         int[] mejores = order(apt);
 
-        int[] out = new int[num];
+        ArrayList<Integer[]>[] out = new ArrayList[num];
         for(int i=0; i<num; i++){
-            out[i] = w[mejores[i]];
+            out[i] = new ArrayList<>(w[mejores[i]]);
         }
 
         return out;
     }
 
-    private static int[] extraerImportar(int w[], int cadena[], int n){
+    private static ArrayList<Integer[]>[] extraerImportar(ArrayList<Integer[]>[] w, ArrayList<Integer[]>[] cadena, int n){
         int num = cadena.length;
         int[] posAleatorias = new int[num];
 
         for(int i=0; i<num; i++){
             int posAleatoria = (int) Math.floor(Math.random()*n);
             while(checkExists(posAleatorias, posAleatoria)) posAleatoria = (int) Math.floor(Math.random()*n);
+            posAleatorias[i] = posAleatoria;
             w[posAleatoria] = cadena[i];
         }
 
         return w;
     }
 
-    private static int[] recombinar(int a, int b, int genes, int r){
-        String as = String.valueOf(a);
-        while(as.length()!=r) as = '0'+as;
-        String bs = String.valueOf(b);
-        while(bs.length()!=r) bs = '0'+bs;
+    private static ArrayList<Integer[]>[] recombinar(ArrayList<Integer[]> a, ArrayList<Integer[]> b, int borde1, int borde2){
+        int genes = a.get(0).length;
+        if(borde1>borde2){
+            int temp = borde1;
+            borde1 = borde2;
+            borde2 = temp;
+        }
 
-        String sub_a = as.substring(genes);
-        String sub_b = bs.substring(genes);
+        for(int i=0; i<a.size(); i++){
+            Integer[] vectorA = a.get(i); Integer[] nuevoA = new Integer[genes];
+            Integer[] vectorB = b.get(i); Integer[] nuevoB = new Integer[genes];
+            for(int j=0; j<genes; j++){
+                if(j>=borde1 && j<=borde2){
+                    nuevoA[j] = vectorA[j];
+                    nuevoB[j] = vectorB[j];
+                }else{
+                    nuevoA[j] = -1;
+                    nuevoB[j] = -1;
+                }
+            }
 
-        String finalas = as.substring(0,genes)+sub_b;
-        String finalbs = bs.substring(0,genes)+sub_a;
-        return new int[]{Integer.valueOf(finalas),Integer.valueOf(finalbs)};
+            int posB=0; int posA=0;
+            for(int x=0; x<genes; x++){
+                if(vectorB[x]==vectorA[borde2]) posB=x;
+                if(vectorA[x]==vectorB[borde2]) posA=x;
+            }
+
+            int j = borde2+1;
+            while(j!=borde1){
+                if(j==genes){j=0;}
+
+                posB++; if(posB==genes){posB=0;}
+                boolean alreadyInA = true;
+                while(alreadyInA) {
+                    alreadyInA = false;
+                    for (int x = 0; x < genes; x++) {
+                        if (vectorB[posB] == nuevoA[x]) alreadyInA = true;
+                    }
+                    if(alreadyInA){
+                        posB++; if(posB==genes){posB=0;}
+                    }
+                }
+
+                posA++; if(posA==genes){posA=0;}
+                boolean alreadyInB = true;
+                while(alreadyInB) {
+                    alreadyInB = false;
+                    for (int x = 0; x < genes; x++) {
+                        if (vectorA[posA] == nuevoB[x]) alreadyInB = true;
+                    }
+                    if(alreadyInB){
+                        posA++; if(posA==genes){posA=0;}
+                    }
+                }
+
+                nuevoA[j] = vectorB[posB];
+                nuevoB[j] = vectorA[posA];
+                j++;
+            }
+
+            a.set(i,nuevoA);
+            b.set(i,nuevoB);
+        }
+
+        return new ArrayList[]{a, b};
     }
 
     private static int[][] getCrossoverParejas(int n, double pc){
@@ -324,15 +379,6 @@ public class Main {
         return false;
     }
 
-    private static int funcionAptitud(int[] w, int x){
-        //FUNCION DE APTITUD: LONGUITUD DE 2'S EN LA CADENA
-        int out=0; String wS = String.valueOf(w[x]);
-        for(int i=0; i<wS.length(); i++){
-            if(wS.charAt(i)=='2') out++;
-        }
-        return out;
-    }
-
     private static int[] order(int[] x){
         int[] minList = new int[x.length];
 
@@ -350,6 +396,17 @@ public class Main {
         for(int i=0; i<x.length; i++){
             if(min>x[i]){
                 min = x[i];
+                pos=i;
+            }
+        }
+        return pos;
+    }
+
+    private static int max(int[] x){
+        int max = -1; int pos = -1;
+        for(int i=0; i<x.length; i++){
+            if(max<x[i]){
+                max = x[i];
                 pos=i;
             }
         }
