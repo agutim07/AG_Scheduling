@@ -33,11 +33,11 @@ public class Main {
 
         //PARAMETROS DEL ALGORITMO
         int n = 5; //TAMAÑO DE LA POBLACION
-        double pc = 0.8; //PROBABILIDAD DE CRUCE
+        double pc = 0.45; //PROBABILIDAD DE CRUCE
         double pm = 1.0 / (r*n); //PROBABILIDAD DE MUTACION
-        int t_max = 10;
+        int t_max = 20;
         int num = 1000; //Nº ORIGINAL DE CASILLAS DE LA RULETA
-        double pextraccion = 0.1; //PORCENTAJE DE LAS MUESTRAS QUE EXTRAEMOS AL INICIO DEL BUCLE Y LUEGO IMPORTAMOS
+        double pextraccion = 0.2; //PORCENTAJE DE LAS MUESTRAS QUE EXTRAEMOS AL INICIO DEL BUCLE Y LUEGO IMPORTAMOS
         boolean elitismo = true;
 
         //INICIO DEL ALGORITMO
